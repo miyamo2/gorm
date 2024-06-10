@@ -522,7 +522,7 @@ func (db *DB) Rows() (*sql.Rows, error) {
 	return rows, tx.Error
 }
 
-type scannerFunc func(dest ...any) error
+type scannerFunc func(dest interface{}) error
 
 func (db *DB) ScanIter() func(yield func(scannerFunc) bool) {
 	if strings.Contains(os.Getenv("GOEXPERIMENT"), "rangefunc") {
@@ -538,7 +538,9 @@ func (db *DB) ScanIter() func(yield func(scannerFunc) bool) {
 			return
 		}
 		for rows.Next() {
-			yield(rows.Scan)
+			yield(func(dest interface{}) error {
+				return db.ScanRows(rows, dest)
+			})
 		}
 		db.AddError(rows.Close())
 		return
