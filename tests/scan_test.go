@@ -1,6 +1,7 @@
 package tests_test
 
 import (
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -141,6 +142,52 @@ func TestScanRows(t *testing.T) {
 			t.Errorf("should get no error, but got %v", err)
 		}
 		results = append(results, result)
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return strings.Compare(results[i].Name, results[j].Name) <= -1
+	})
+
+	if !reflect.DeepEqual(results, []Result{{Name: "ScanRowsUser2", Age: 10}, {Name: "ScanRowsUser3", Age: 20}}) {
+		t.Errorf("Should find expected results")
+	}
+
+	var ages int
+	if err := DB.Table("users").Where("name = ? or name = ?", user2.Name, user3.Name).Select("SUM(age)").Scan(&ages).Error; err != nil || ages != 30 {
+		t.Fatalf("failed to scan ages, got error %v, ages: %v", err, ages)
+	}
+
+	var name string
+	if err := DB.Table("users").Where("name = ?", user2.Name).Select("name").Scan(&name).Error; err != nil || name != user2.Name {
+		t.Fatalf("failed to scan ages, got error %v, ages: %v", err, name)
+	}
+}
+
+func TestScanScanIter(t *testing.T) {
+	if strings.Contains(os.Getenv("GOEXPERIMENT"), "rangefunc") {
+		// temporary solution until update to Go1.23
+		return
+	}
+	user1 := User{Name: "ScanRowsUser1", Age: 1}
+	user2 := User{Name: "ScanRowsUser2", Age: 10}
+	user3 := User{Name: "ScanRowsUser3", Age: 20}
+	DB.Save(&user1).Save(&user2).Save(&user3)
+
+	type Result struct {
+		Name string
+		Age  int
+	}
+
+	var results []Result
+	for sf := range DB.Table("users").Where("name = ? or name = ?", user2.Name, user3.Name).Select("name, age").ScanIter() {
+		var result Result
+		if err := sf(&result); err != nil {
+			t.Errorf("should get no error, but got %v", err)
+		}
+		results = append(results, result)
+	}
+	if DB.Error != nil {
+		t.Errorf("Should not get error, but got %v", DB.Error)
 	}
 
 	sort.Slice(results, func(i, j int) bool {

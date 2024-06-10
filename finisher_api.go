@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
@@ -519,6 +520,29 @@ func (db *DB) Rows() (*sql.Rows, error) {
 		tx.Error = ErrDryRunModeUnsupported
 	}
 	return rows, tx.Error
+}
+
+type scannerFunc func(dest ...any) error
+
+func (db *DB) ScanIter() func(yield func(scannerFunc) bool) {
+	if strings.Contains(os.Getenv("GOEXPERIMENT"), "rangefunc") {
+		// temporary solution until update to Go1.23
+		return func(yield func(scannerFunc) bool) {
+			return
+		}
+	}
+	rows, err := db.Rows()
+	return func(yield func(scannerFunc) bool) {
+		if err != nil {
+			db.AddError(err)
+			return
+		}
+		for rows.Next() {
+			yield(rows.Scan)
+		}
+		db.AddError(rows.Close())
+		return
+	}
 }
 
 // Scan scans selected value to the struct dest
