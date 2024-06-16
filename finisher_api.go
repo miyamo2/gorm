@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"strings"
 
@@ -525,12 +524,6 @@ func (db *DB) Rows() (*sql.Rows, error) {
 type scannerFunc func(dest interface{}) error
 
 func (db *DB) ScanIter() func(yield func(scannerFunc) bool) {
-	if strings.Contains(os.Getenv("GOEXPERIMENT"), "rangefunc") {
-		// temporary solution until update to Go1.23
-		return func(yield func(scannerFunc) bool) {
-			return
-		}
-	}
 	rows, err := db.Rows()
 	return func(yield func(scannerFunc) bool) {
 		if err != nil {
