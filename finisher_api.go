@@ -531,12 +531,13 @@ func (db *DB) ScanIter() func(yield func(scannerFunc) bool) {
 			return
 		}
 		for rows.Next() {
-			yield(func(dest interface{}) error {
+			if !yield(func(dest interface{}) error {
 				return db.ScanRows(rows, dest)
-			})
+			}) {
+				break
+			}
 		}
 		db.AddError(rows.Close())
-		return
 	}
 }
 

@@ -1,7 +1,6 @@
 package tests_test
 
 import (
-	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -164,10 +163,6 @@ func TestScanRows(t *testing.T) {
 }
 
 func TestScanScanIter(t *testing.T) {
-	if strings.Contains(os.Getenv("GOEXPERIMENT"), "rangefunc") {
-		// temporary solution until update to Go1.23
-		return
-	}
 	user1 := User{Name: "ScanRowsUser1", Age: 1}
 	user2 := User{Name: "ScanRowsUser2", Age: 10}
 	user3 := User{Name: "ScanRowsUser3", Age: 20}
