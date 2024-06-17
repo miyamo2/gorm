@@ -162,6 +162,38 @@ func TestScanRows(t *testing.T) {
 	}
 }
 
+func TestIterScan(t *testing.T) {
+	user1 := User{Name: "ScanRowsUser1", Age: 1}
+	user2 := User{Name: "ScanRowsUser2", Age: 10}
+	user3 := User{Name: "ScanRowsUser3", Age: 20}
+	DB.Save(&user1).Save(&user2).Save(&user3)
+
+	type Result struct {
+		Name string
+		Age  int
+	}
+
+	var results []Result
+	query := DB.Table("users").Where("name = ? or name = ?", user2.Name, user3.Name).Select("name, age")
+	for result, err := range gorm.IterScan[Result](query) {
+		if err != nil {
+			t.Errorf("should get no error, but got %v", err)
+		}
+		results = append(results, result)
+	}
+	if DB.Error != nil {
+		t.Errorf("Should not get error, but got %v", DB.Error)
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return strings.Compare(results[i].Name, results[j].Name) <= -1
+	})
+
+	if !reflect.DeepEqual(results, []Result{{Name: "ScanRowsUser2", Age: 10}, {Name: "ScanRowsUser3", Age: 20}}) {
+		t.Errorf("Should find expected results")
+	}
+}
+
 func TestScanToEmbedded(t *testing.T) {
 	person1 := Person{Name: "person 1"}
 	person2 := Person{Name: "person 2"}
