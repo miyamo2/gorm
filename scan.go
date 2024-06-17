@@ -346,3 +346,23 @@ func Scan(rows Rows, db *DB, mode ScanMode) {
 		db.AddError(ErrRecordNotFound)
 	}
 }
+
+func IterScan[T any](db *DB) func(yield func(T, error) bool) {
+	rows, err := db.Rows()
+	if err != nil {
+		db.AddError(err)
+		return func(yield func(T, error) bool) {
+			return
+		}
+	}
+	return func(yield func(T, error) bool) {
+		for rows.Next() {
+			var result T
+			err := db.ScanRows(rows, &result)
+			if !yield(result, err) {
+				break
+			}
+		}
+		db.AddError(rows.Close())
+	}
+}

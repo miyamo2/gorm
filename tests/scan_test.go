@@ -162,7 +162,7 @@ func TestScanRows(t *testing.T) {
 	}
 }
 
-func TestScanScanIter(t *testing.T) {
+func TestIterScan(t *testing.T) {
 	user1 := User{Name: "ScanRowsUser1", Age: 1}
 	user2 := User{Name: "ScanRowsUser2", Age: 10}
 	user3 := User{Name: "ScanRowsUser3", Age: 20}
@@ -174,9 +174,9 @@ func TestScanScanIter(t *testing.T) {
 	}
 
 	var results []Result
-	for sf := range DB.Table("users").Where("name = ? or name = ?", user2.Name, user3.Name).Select("name, age").ScanIter() {
-		var result Result
-		if err := sf(&result); err != nil {
+	query := DB.Table("users").Where("name = ? or name = ?", user2.Name, user3.Name).Select("name, age")
+	for result, err := range gorm.IterScan[Result](query) {
+		if err != nil {
 			t.Errorf("should get no error, but got %v", err)
 		}
 		results = append(results, result)

@@ -521,26 +521,6 @@ func (db *DB) Rows() (*sql.Rows, error) {
 	return rows, tx.Error
 }
 
-type scannerFunc func(dest interface{}) error
-
-func (db *DB) ScanIter() func(yield func(scannerFunc) bool) {
-	rows, err := db.Rows()
-	return func(yield func(scannerFunc) bool) {
-		if err != nil {
-			db.AddError(err)
-			return
-		}
-		for rows.Next() {
-			if !yield(func(dest interface{}) error {
-				return db.ScanRows(rows, dest)
-			}) {
-				break
-			}
-		}
-		db.AddError(rows.Close())
-	}
-}
-
 // Scan scans selected value to the struct dest
 func (db *DB) Scan(dest interface{}) (tx *DB) {
 	config := *db.Config
